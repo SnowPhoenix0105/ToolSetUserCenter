@@ -3,11 +3,11 @@
 
 name: Java CI with Maven
 
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
+on:
+  push:
+    branches: [ all ]
+  pull_request:
+    branches: [ all ]
 
 jobs:
   test:
@@ -22,5 +22,12 @@ jobs:
         java-version: '8'
         distribution: 'adopt'
         cache: maven
-    - name: Build with Maven
-      run: mvn test
+    - name: Test with Maven
+      run: mvn --batch-mode test
+    - name: Generate JaCoCo Report
+      run: mvn jacoco:report && cp -r ./target/site/jacoco ./report 
+    - name: Packup TestReport
+      uses: actions/upload-artifact@v2
+      with:
+        name: TestReport
+        path: report
