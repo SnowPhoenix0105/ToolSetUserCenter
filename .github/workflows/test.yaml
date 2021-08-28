@@ -25,5 +25,5 @@ jobs:
     - name: Packup TestReport
       uses: actions/upload-artifact@v2
       with:
-        name: TestReport_$(date +%s)
-        path: report
+        name: TestReport
+        path: report/index.html
