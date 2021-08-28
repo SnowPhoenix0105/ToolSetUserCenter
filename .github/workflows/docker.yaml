@@ -12,18 +12,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up JDK 8
       uses: actions/setup-java@v2
       with:
         java-version: '8'
         distribution: 'adopt'
         cache: maven
+
     - name: Build with Maven
       run: mvn --batch-mode package
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
-        name: ToolSetUserCenter
+        name: ToolSetUserCenter_Jar
         path: output/ToolSetUserCenter.jar
 
   pull-to-docker-hub:
@@ -34,7 +37,30 @@ jobs:
     - name: Download Artifact
       uses: actions/download-artifact@v2
       with:
-        name: ToolSetUserCenter
-        path: package
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag toolset_usercenter:$(date +%s)
+        name: ToolSetUserCenter_Jar
+        path: output
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        file: ./Dockerfile
+        builder: ${{ steps.buildx.outputs.name }}
+        push: true
+        tags:  ${{ secrets.DOCKER_HUB_USERNAME }}/toolset_usercenter:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache
+
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
