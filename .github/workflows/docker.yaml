@@ -1,14 +1,12 @@
-name: Docker Image CI
+name: Build And Pushlish
 
 on: 
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
 
-  build:
+  build-with-maven:
 
     runs-on: ubuntu-latest
 
@@ -22,5 +20,21 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn --batch-mode package
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ToolSetUserCenter
+        path: output/ToolSetUserCenter.jar
+
+  pull-to-docker-hub:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ToolSetUserCenter
+        path: package
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ToolSetUserCenter:$(date +%s)
+      run: docker build . --file Dockerfile --tag toolset_usercenter:$(date +%s)
