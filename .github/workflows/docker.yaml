@@ -32,6 +32,7 @@ jobs:
   pull-to-docker-hub:
 
     runs-on: ubuntu-latest
+    needs: build-with-maven
 
     steps:
     - name: Download Artifact
