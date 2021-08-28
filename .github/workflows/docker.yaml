@@ -27,7 +27,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ToolSetUserCenter_Jar
-        path: output/ToolSetUserCenter.jar
+        path: target/ToolSetUserCenter.jar
 
   pull-to-docker-hub:
 
@@ -39,7 +39,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: ToolSetUserCenter_Jar
-        path: output
+        path: target
 
     - name: Login to Docker Hub
       uses: docker/login-action@v1
