@@ -3,3 +3,6 @@ spring:
     url: jdbc:mysql://localhost:3306/toolsetusercenter?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: toolsetusercenter
     password: usercenter
+jwt:
+  private-key-path: ./pem/pri.pkcs8.pem
+  public-key-path: ./pem/pub.pem
