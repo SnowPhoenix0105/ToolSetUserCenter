@@ -75,11 +75,9 @@ public class JwtUtil {
         //        claims.setGeneratedJwtId(); // a unique identifier for the token
         LocalDateTime issuedAt = payload.getIssuedAt();
         if (issuedAt != null) {
-            claims.setIssuedAt(TimeUtil.localDateTimeToNumericDate(issuedAt));  // when the token was issued/created (now)
+            issuedAt = LocalDateTime.now();
         }
-        else {
-            claims.setIssuedAtToNow();
-        }
+        claims.setIssuedAt(TimeUtil.localDateTimeToNumericDate(issuedAt));  // when the token was issued/created (now)
         LocalDateTime notBefore = payload.getNotBefore();
         if (notBefore != null) {
             claims.setNotBefore(TimeUtil.localDateTimeToNumericDate(notBefore));
@@ -135,6 +133,7 @@ public class JwtUtil {
         // If the JWT is encrypted too, you need only provide a decryption key or
         // decryption key resolver to the builder.
         JwtConsumer jwtConsumer = new JwtConsumerBuilder()
+                .setEvaluationTime(TimeUtil.localDateTimeToNumericDate(LocalDateTime.now()))
                 .setRequireExpirationTime() // the JWT must have an expiration time
                 .setRequireIssuedAt() // the JWT must have an issued time
                 .setVerificationKey(this.publicKey) // verify the signature with the public key
