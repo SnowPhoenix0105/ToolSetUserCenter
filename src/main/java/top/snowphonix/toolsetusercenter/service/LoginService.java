@@ -2,7 +2,6 @@ package top.snowphonix.toolsetusercenter.service;
 
 import org.jose4j.lang.JoseException;
 import org.springframework.stereotype.Service;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import top.snowphonix.toolsetusercenter.mappers.UserMapper;
 import top.snowphonix.toolsetusercenter.model.AuthLevel;
 import top.snowphonix.toolsetusercenter.model.JwtPayload;

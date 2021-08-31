@@ -74,7 +74,7 @@ public class JwtUtil {
                 TimeUtil.localDateTimeToNumericDate(payload.getExpire())); // time when the token will expire (10 minutes from now)
         //        claims.setGeneratedJwtId(); // a unique identifier for the token
         LocalDateTime issuedAt = payload.getIssuedAt();
-        if (issuedAt != null) {
+        if (issuedAt == null) {
             issuedAt = LocalDateTime.now();
         }
         claims.setIssuedAt(TimeUtil.localDateTimeToNumericDate(issuedAt));  // when the token was issued/created (now)
