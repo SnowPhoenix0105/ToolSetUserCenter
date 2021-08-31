@@ -6,3 +6,5 @@ spring:
 jwt:
   private-key-path: ./pem/pri.pkcs8.pem
   public-key-path: ./pem/pub.pem
+server:
+  port: 8001

@@ -2,10 +2,10 @@ package top.snowphonix.toolsetusercenter.model;
 
 import lombok.Data;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 public class TokenExpireTuple {
     private String token;
-    private Date expire;
+    private LocalDateTime expire;
 }

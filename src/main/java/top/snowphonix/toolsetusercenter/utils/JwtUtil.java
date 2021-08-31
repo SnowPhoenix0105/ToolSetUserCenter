@@ -1,37 +1,42 @@
-package top.snowphonix.toolsetusercenter.service;
+package top.snowphonix.toolsetusercenter.utils;
 
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.ErrorCodes;
+import org.jose4j.jwt.NumericDate;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import top.snowphonix.toolsetusercenter.config.JwtConfig;
+import top.snowphonix.toolsetusercenter.model.JwtPayload;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.*;
-import java.security.spec.*;
-import java.time.LocalDate;
-import java.util.Arrays;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 
-@Service
-public class TokenService {
+@Component
+public class JwtUtil {
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
-    private final Logger logger = LoggerFactory.getLogger(TokenService.class);
+    private final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    public TokenService(JwtConfig jwtConfig) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+    public JwtUtil(JwtConfig jwtConfig) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         byte[] publicFileBytes = readPemFile(jwtConfig.getPublicKeyPath());
         X509EncodedKeySpec publicSpec = new X509EncodedKeySpec(publicFileBytes);
 
@@ -50,29 +55,47 @@ public class TokenService {
         return Base64.getDecoder().decode(sb.toString());
     }
 
-
-    public String generateJwt(int uid, LocalDate expire) throws JoseException {
+    /***
+     * 生成JWT。
+     * 如果issuedAt为null，则为其生成当前时间。
+     * 如果notBefore或auth为null，则不会出现在最终的JWT中。
+     * 其余属性不应当为null。
+     *
+     * @param payload 需要JWT保存的信息
+     * @return 生成的JWT字符串
+     * @throws JoseException 生成JWT失败
+     */
+    public String generateJwt(JwtPayload payload) throws JoseException {
 
         // Create the Claims, which will be the content of the JWT
         JwtClaims claims = new JwtClaims();
-        claims.setIssuer("Issuer");  // who creates the token and signs it
-        claims.setAudience("Audience"); // to whom the token is intended to be sent
-        claims.setExpirationTimeMinutesInTheFuture(10); // time when the token will expire (10 minutes from now)
-        claims.setGeneratedJwtId(); // a unique identifier for the token
-        claims.setIssuedAtToNow();  // when the token was issued/created (now)
-        claims.setNotBeforeMinutesInThePast(2); // time before which the token is not yet valid (2 minutes ago)
-        claims.setSubject("subject"); // the subject/principal is whom the token is about
-        claims.setClaim("email", "mail@example.com"); // additional claims/attributes about the subject can be added
-        List<String> groups = Arrays.asList("group-one", "other-group", "group-three");
-        claims.setStringListClaim("groups", groups); // multi-valued claims work too and will end up as a JSON array
+        claims.setClaim("uid", payload.getUid());
+        claims.setExpirationTime(
+                TimeUtil.localDateTimeToNumericDate(payload.getExpire())); // time when the token will expire (10 minutes from now)
+        //        claims.setGeneratedJwtId(); // a unique identifier for the token
+        LocalDateTime issuedAt = payload.getIssuedAt();
+        if (issuedAt != null) {
+            claims.setIssuedAt(TimeUtil.localDateTimeToNumericDate(issuedAt));  // when the token was issued/created (now)
+        }
+        else {
+            claims.setIssuedAtToNow();
+        }
+        LocalDateTime notBefore = payload.getNotBefore();
+        if (notBefore != null) {
+            claims.setNotBefore(TimeUtil.localDateTimeToNumericDate(notBefore));
+        }
+        String auth = payload.getAuth();
+        if (auth != null) {
+            claims.setClaim("auth", auth);
+        }
 
         // A JWT is a JWS and/or a JWE with JSON claims as the payload.
         // In this example it is a JWS so we create a JsonWebSignature object.
         JsonWebSignature jws = new JsonWebSignature();
 
         // The payload of the JWS is JSON content of the JWT Claims
-        String payload = claims.toJson();
-        jws.setPayload(payload);
+        String actualPayload = claims.toJson();
+        jws.setPayload(actualPayload);
 
         // The JWT is signed using the private key
         jws.setKey(this.privateKey);
@@ -89,13 +112,20 @@ public class TokenService {
 
         // Now you can do something with the JWT. Like send it to some other party
         // over the clouds and through the interwebs.
-        logger.debug("payload: " + payload);
+        logger.debug("payload: " + actualPayload);
         logger.debug("JWT: " + jwt);
 
         return jwt;
     }
 
-    public boolean validateToken(String jwt) throws MalformedClaimException {
+    /***
+     * 验证JWT，如果验证失败，返回null，否则返回其Payload中的信息。
+     * 返回的Payload信息中，notBefore和auth可能会null，其余都不为null。
+     *
+     * @param jwt JWT字符串
+     * @return 失败返回null，成功返回其中Payload中的信息
+     */
+    public JwtPayload validateToken(String jwt) {
 
         // Use JwtConsumerBuilder to construct an appropriate JwtConsumer, which will
         // be used to validate and process the JWT.
@@ -106,24 +136,43 @@ public class TokenService {
         // decryption key resolver to the builder.
         JwtConsumer jwtConsumer = new JwtConsumerBuilder()
                 .setRequireExpirationTime() // the JWT must have an expiration time
-                .setAllowedClockSkewInSeconds(30) // allow some leeway in validating time based claims to account for clock skew
-                .setRequireSubject() // the JWT must have a subject claim
-                .setExpectedIssuer("Issuer") // whom the JWT needs to have been issued by
-                .setExpectedAudience("Audience") // to whom the JWT is intended for
+                .setRequireIssuedAt() // the JWT must have an issued time
                 .setVerificationKey(this.publicKey) // verify the signature with the public key
                 .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
-                        AlgorithmConstraints.ConstraintType.PERMIT, AlgorithmIdentifiers.RSA_USING_SHA256) // which is only RS256 here
+                        AlgorithmConstraints.ConstraintType.PERMIT,
+                        AlgorithmIdentifiers.RSA_USING_SHA256) // which is only RS256 here
                 .build(); // create the JwtConsumer instance
 
         try
         {
             //  Validate the JWT and process it to the Claims
             JwtClaims jwtClaims = jwtConsumer.processToClaims(jwt);
-            System.out.println("JWT validation succeeded! " + jwtClaims);
-            return true;
+            Long uid = jwtClaims.getClaimValue("uid", Long.class);
+            if (uid == null) {
+                logger.error("Valid JWT without uid payload");
+                return null;
+            }
+            JwtPayload payload = JwtPayload.builder()
+                    .uid(Math.toIntExact(uid))
+                    .expire(TimeUtil.numericDateToLocalDateTime(jwtClaims.getExpirationTime()))
+                    .issuedAt(TimeUtil.numericDateToLocalDateTime(jwtClaims.getIssuedAt()))
+                    .build();
+            String auth = jwtClaims.getClaimValueAsString("auth");
+            if (auth != null) {
+                payload.setAuth(auth);
+            }
+            NumericDate notBefore = jwtClaims.getNotBefore();
+            if (notBefore != null) {
+                payload.setNotBefore(TimeUtil.numericDateToLocalDateTime(notBefore));
+            }
+            logger.debug("JWT validation succeeded! " + jwtClaims);
+            return payload;
         }
-        catch (InvalidJwtException e)
-        {
+        catch (MalformedClaimException e) {
+            logger.error("Valid JWT with wrong type", e);
+            return null;
+        }
+        catch (InvalidJwtException e) {
             // InvalidJwtException will be thrown, if the JWT failed processing or validation in anyway.
             // Hopefully with meaningful explanations(s) about what went wrong.
             logger.info("Invalid JWT! ", e);
@@ -134,15 +183,16 @@ public class TokenService {
             // Whether or not the JWT has expired being one common reason for invalidity
             if (e.hasExpired())
             {
-                logger.info("JWT expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
+                try {
+                    NumericDate exp = e.getJwtContext().getJwtClaims().getExpirationTime();
+                    logger.debug("JWT expired at " + exp);
+//                    throw new TokenExpiredException(TimeUtil.numericDateToLocalDateTime(exp));
+                }
+                catch (MalformedClaimException me) {
+                    logger.debug("JWT expired and has wrong expire type");
+                }
             }
-
-            // Or maybe the audience was invalid
-            if (e.hasErrorCode(ErrorCodes.AUDIENCE_INVALID))
-            {
-                logger.info("JWT had wrong audience: " + e.getJwtContext().getJwtClaims().getAudience());
-            }
-            return false;
+            return null;
         }
     }
 }

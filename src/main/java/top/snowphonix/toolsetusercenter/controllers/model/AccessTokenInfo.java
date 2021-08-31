@@ -6,24 +6,16 @@ import top.snowphonix.toolsetusercenter.model.AuthLevel;
 import top.snowphonix.toolsetusercenter.model.TokenExpireTuple;
 import top.snowphonix.toolsetusercenter.utils.TimeUtil;
 
-@Setter
 @Getter
-public class DoubleTokenInfo {
-    private String refreshToken;
-    private String refreshExpireString;
-    private long refreshExpire;
-
+@Setter
+public class AccessTokenInfo {
     private String accessToken;
     private String accessExpireString;
     private long accessExpire;
 
     private String auth;
 
-    public DoubleTokenInfo(TokenExpireTuple refreshTuple, TokenExpireTuple accessTuple, AuthLevel auth) {
-        refreshToken = refreshTuple.getToken();
-        refreshExpireString = TimeUtil.localDAteTimeToString(refreshTuple.getExpire());
-        refreshExpire = TimeUtil.localDateTimeToTimestamp(refreshTuple.getExpire());
-
+    public AccessTokenInfo(TokenExpireTuple accessTuple, AuthLevel auth) {
         accessToken = accessTuple.getToken();
         accessExpireString = TimeUtil.localDAteTimeToString(accessTuple.getExpire());
         accessExpire = TimeUtil.localDateTimeToTimestamp(accessTuple.getExpire());

@@ -3,7 +3,7 @@ package top.snowphonix.toolsetusercenter.model;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -12,7 +12,7 @@ public class User {
     private String name;
     private int photo;
     private int auth;
-    private LocalDate expire;
+    private LocalDateTime expire;
     private String email;
     private String bcrypt;
 }
