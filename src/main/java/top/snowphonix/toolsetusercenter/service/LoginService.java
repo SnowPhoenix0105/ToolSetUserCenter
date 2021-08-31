@@ -53,6 +53,6 @@ public class LoginService {
             return auth;
         }
         // TODO
-        throw new NotImplementedException();
+        throw new RuntimeException("Not implement yet!");
     }
 }
