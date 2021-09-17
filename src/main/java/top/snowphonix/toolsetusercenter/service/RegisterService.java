@@ -29,7 +29,7 @@ public class RegisterService {
                 .bcrypt("")
                 .auth(AuthLevel.PASSERBY.toNum())
                 .build();
-        int uid = userMapper.insert(tempUser);
-        return uid;
+        userMapper.insert(tempUser);
+        return tempUser.getUid();
     }
 }
