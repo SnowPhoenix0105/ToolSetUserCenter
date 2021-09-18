@@ -37,7 +37,7 @@ public class TokenController {
     @PostMapping("/access")
     public ResponseEntity<AccessTokenInfo> access(@RequestBody RefreshTokenSimpleInfo refreshToken) throws JoseException {
         TokenExpireTuple refreshTokenTuple = new TokenExpireTuple();
-        AuthLevel auth = refreshService.getNewRefreshToken(refreshToken.getRefreshToken(), refreshTokenTuple);
+        AuthLevel auth = refreshService.getAccessToken(refreshToken.getRefreshToken(), refreshTokenTuple);
 
         if (auth == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
