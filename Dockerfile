@@ -3,4 +3,3 @@ FROM openjdk:8-jre
 WORKDIR /usr/local
 COPY ./target/ToolSetUserCenter.jar /usr/local/ToolSetUserCenter.jar
 # ENTRYPOINT ["java", "-jar", "/usr/local/ToolSetUserCenter.jar"]
-CMD tree
