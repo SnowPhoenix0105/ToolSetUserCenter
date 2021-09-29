@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 public interface UserMapper {
     @Insert("insert into user(name, photo, auth, expire, email, bcrypt) values " +
             "(#{name}, #{photo}, #{auth}, #{expire}, #{email}, #{bcrypt})")
-    @Options(useGeneratedKeys = true)
-    int insert(User user);
+    @Options(useGeneratedKeys = true, keyColumn = "uid", keyProperty = "uid")
+    void insert(User user);
 
     @Select("select uid, name, photo, auth, expire, email, bcrypt " +
             "from user where uid=#{uid}")
